@@ -1,39 +1,33 @@
-# 🧘 Flow: Find Your Rhythm
+# 🧘 Flow
 
-Flow is a minimalist, mobile-first web application designed to help you focus and find your rhythm using timed intervals. It features a sleek, dark, Apple-inspired UI with glassmorphism effects, liquid progress indicators, and an immersive ambient background.
+> **Find your rhythm.**
 
-## ✨ Key Features
+Flow is a minimalist, mobile-first web application designed for interval training and deep focus sessions. It features a sleek "Titanium Glass" aesthetic inspired by Apple's design language, liquid progress indicators, and an immersive ambient background.
 
-* **Customizable Intervals:** Set your own **Focus** and **Recovery** durations.
-* **Custom Routine Support:** Define your entire routine by listing tasks/sets (one per line).
-* **Immersive UI/UX:**
-    * **Titanium Glass Design:** Dark mode, San Francisco font, and glassmorphism.
-    * **Liquid Progress:** Dynamically filling background indicates session progress.
-    * **Mode Switching:** Smooth transitions between **Focus (Solar Flare 🔴)** and **Recovery (Deep Breath 🟢)** modes.
-    * **Wallet Stack Visualizer:** Unique visual representation of your routine progress.
-* **Persistence:** Auto-saves your settings and streak data.
-* **Celebration:** Confetti burst upon routine completion!
+## ✨ Features
 
-## 🚀 Getting Started
+- **⏱️ Customizable Intervals:** Set your own Focus and Recovery durations.
+- **📝 Custom Routines:** Define your workout sets or tasks line-by-line using the simple text editor.
+- **🎨 Immersive UI:**
+  - Dark mode with glassmorphism effects.
+  - Dynamic "Liquid" progress bar that fills up as you work.
+  - Ambient background that shifts colors based on mode (Solar Flare 🔴 for Focus / Deep Breath 🟢 for Recovery).
+- **🔥 Streak Tracking:** Automatically saves your daily streaks and settings using LocalStorage.
+- **🎉 Celebrations:** Confetti effects upon routine completion.
 
-Flow is a single-file application. No installation required.
+## 🚀 How to Run
 
-### 1. Run Locally
-1.  Download the `index.html` file.
-2.  Open it in any modern web browser (Chrome, Safari, Firefox).
+1. Simply download or clone the repository.
+2. Open `index.html` in any modern web browser (Chrome, Safari, Edge).
+3. No installation, server, or build process required.
 
-### 2. Usage
-1.  **Setup:** Enter your focus time, rest time, and list your exercises/tasks.
-2.  **Start:** Click "Start Flow".
-3.  **Flow:** Follow the timer and visual cues. The app handles the rest.
+## 🛠️ Technologies
 
-## ⚙️ Technologies
+- HTML5
+- Tailwind CSS (via CDN)
+- Vanilla JavaScript
+- Canvas Confetti
 
-* HTML5 / CSS3
-* Tailwind CSS (via CDN)
-* Vanilla JavaScript
-* Canvas Confetti
+---
 
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
+Made with ❤️ by [mylilboo](https://www.instagram.com/mylilboo/)
