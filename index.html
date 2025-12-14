@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* Apple System Font Setup */
+        :root {
+            --app-bg: #000000;
+            --card-glass: rgba(255, 255, 255, 0.12);
+            --card-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            
+            /* Flow Brand Colors */
+            --color-solar-flare-start: #FF453A;
+            --color-solar-flare-end: #FF9F0A;
+            --color-deep-breath-start: #30D158;
+            --color-deep-breath-end: #63E6E2;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--app-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Ambient Background: Midnight */
+        .ambient-bg {
+            position: absolute;
+            width: 150vw;
+            height: 150vw;
+            background: radial-gradient(circle, rgba(255, 69, 58, 0.15) 0%, rgba(0,0,0,0) 60%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            filter: blur(80px);
+            transition: background 1.5s ease;
+            z-index: 0;
+        }
+
+        .ambient-bg.recovery-mode {
+            background: radial-gradient(circle, rgba(48, 209, 88, 0.15) 0%, rgba(0,0,0,0) 60%);
+        }
+
+        /* Glass Buttons */
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .glass-btn:active {
+            transform: scale(0.96);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Active Card Style (Titanium Feel) */
+        .main-card {
+            background: #1C1C1E;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Liquid Motion */
+        .liquid-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            /* Solar Flare Gradient */
+            background: linear-gradient(to top, var(--color-solar-flare-start), var(--color-solar-flare-end));
+            opacity: 0.8;
+            transition: height 1s linear, background 0.5s ease;
+            mix-blend-mode: overlay;
+        }
+        
+        .liquid-progress.recovery {
+            /* Deep Breath Gradient */
+            background: linear-gradient(to top, var(--color-deep-breath-start), var(--color-deep-breath-end));
+        }
+
+        /* Typography */
+        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+
+        /* Wallet Stack */
+        .wallet-stack-container {
+            height: 60px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            overflow: visible;
+        }
+        
+        .stack-item {
+            width: 40px;
+            height: 60px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 2px;
+            transition: all 0.4s ease;
+            transform-origin: bottom;
+        }
+        .stack-item.active {
+            height: 70px;
+            background: white;
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+            margin-bottom: 10px;
+        }
+        .stack-item.done {
+            background: var(--color-solar-flare-end);
+            opacity: 0.5;
+            height: 40px;
+        }
+
+        /* Inputs */
+        .apple-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 10px;
+            font-family: -apple-system, sans-serif;
+        }
+        .apple-input:focus {
+            outline: none;
+            border-bottom-color: white;
+        }
+
+        /* Animations */
+        .slide-up-enter { animation: slideUpEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUpEnter {
+            from { transform: translateY(100vh); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .settings-card {
+            background: #1C1C1E;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            width: 90%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Background -->
+    <div id="ambient-bg" class="ambient-bg"></div>
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl">
+        <div class="settings-card p-8 text-center slide-up-enter">
+            <div class="mb-8">
+                <h1 class="text-4xl text-white mb-2 tracking-tight">Flow</h1>
+                <p class="text-white/50 text-base font-medium">Find your rhythm.</p>
+            </div>
+            
+            <div class="space-y-8 mb-10">
+                <!-- Design Session Form -->
+                <div>
+                    <div class="flex justify-between text-xs font-semibold text-white/40 uppercase mb-1 px-2">
+                        <span>Sets</span>
+                        <span>Design Session</span>
+                    </div>
+                    <input type="number" id="input-sets" value="20" class="apple-input">
+                </div>
+
+                <div class="flex gap-6">
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-semibold text-orange-400/80 uppercase mb-1 px-2">
+                            <span>Focus</span>
+                        </div>
+                        <input type="number" id="input-seconds" value="45" class="apple-input text-orange-400">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-semibold text-teal-400/80 uppercase mb-1 px-2">
+                            <span>Recovery</span>
+                        </div>
+                        <input type="number" id="input-rest" value="15" class="apple-input text-teal-400">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streak Pill -->
+            <div class="mb-8 flex justify-center">
+                <div class="bg-[#2C2C2E] px-4 py-2 rounded-full flex items-center gap-2 border border-white/5">
+                    <span class="text-orange-500 text-lg">🔥</span>
+                    <span id="streak-display" class="text-sm font-semibold text-white/90">0 Day Streak</span>
+                </div>
+            </div>
+
+            <button onclick="startSession()" class="w-full bg-white text-black font-semibold text-lg py-4 rounded-2xl hover:bg-gray-100 transition active:scale-95 shadow-lg shadow-white/10">
+                Start Flow
+            </button>
+        </div>
+    </div>
+
+    <!-- WORKOUT UI -->
+    <div id="workout-screen" class="hidden h-screen w-screen flex flex-col justify-between pt-safe pb-safe relative z-10">
+        
+        <!-- Header -->
+        <div class="px-6 pt-12 flex justify-between items-center">
+            <div class="flex flex-col">
+                <span id="session-label" class="text-sm font-semibold text-white/50 uppercase tracking-wide">Ready</span>
+                <span id="set-counter" class="text-xl font-bold text-white tracking-tight">Completed 0</span>
+            </div>
+            <div class="flex gap-3">
+                 <button onclick="toggleTimer()" id="play-btn" class="glass-btn w-10 h-10 rounded-full flex items-center justify-center">
+                    <svg id="play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-white"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <button onclick="returnToSetup()" class="glass-btn w-10 h-10 rounded-full flex items-center justify-center" title="Design Session">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Card Area -->
+        <div class="flex-1 flex items-center justify-center px-8 relative perspective">
+            <!-- The Card -->
+            <div id="main-card" class="main-card w-full max-w-sm aspect-[3/4] flex flex-col items-center justify-center opacity-0 translate-y-10">
+                <!-- Liquid Fill -->
+                <div id="card-progress" class="liquid-progress"></div>
+                
+                <!-- Content Layer -->
+                <div class="relative z-10 flex flex-col items-center">
+                    <span id="timer-display" class="text-8xl font-medium tracking-tighter tabular-nums drop-shadow-2xl">--</span>
+                    <span id="timer-label" class="mt-4 text-sm font-bold uppercase tracking-widest opacity-70">Focus</span>
+                    
+                    <div class="mt-12 px-6 text-center">
+                        <p id="quote-display" class="text-lg font-medium leading-relaxed opacity-90">Find your rhythm.</p>
+                    </div>
+                </div>
+
+                <!-- Shine Effect -->
+                <div class="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none"></div>
+            </div>
+        </div>
+
+        <!-- Footer / Stack Visualization -->
+        <div class="h-24 px-6 pb-6 flex flex-col justify-end">
+            <div id="wallet-stack" class="wallet-stack-container">
+                <!-- Items generated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SUMMARY OVERLAY -->
+    <div id="summary-overlay" class="hidden fixed inset-0 z-50 bg-black flex items-center justify-center">
+        <div class="text-center slide-up-enter p-8 w-full max-w-md">
+            <div class="w-24 h-24 rounded-full border-4 border-orange-500 flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(255,165,0,0.4)]">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h2 class="text-4xl font-bold text-white mb-2">Well Done</h2>
+            <p class="text-white/60 mb-8">You found your rhythm today.</p>
+            
+            <div class="flex gap-8 justify-center mb-10">
+                <div>
+                    <div id="sum-time" class="text-2xl font-bold text-white">00:00</div>
+                    <div class="text-xs text-white/40 uppercase font-semibold">Duration</div>
+                </div>
+                <div>
+                    <div id="sum-cal" class="text-2xl font-bold text-orange-500">0</div>
+                    <div class="text-xs text-white/40 uppercase font-semibold">Kcal</div>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="w-full bg-[#1C1C1E] text-white px-8 py-4 rounded-2xl font-semibold border border-white/10 hover:bg-white/10 transition">
+                Close Flow
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            
+            if (type === 'tick') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(1000, now);
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'success') {
+                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C Major
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.frequency.value = f;
+                    o.type = 'sine';
+                    g.gain.setValueAtTime(0, now);
+                    g.gain.linearRampToValueAtTime(0.1, now + 0.1 + (i*0.05));
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.start(now);
+                    o.stop(now + 1.5);
+                });
+            } else if (type === 'switch') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+        }
+
+        function haptic(type) {
+            if (!navigator.vibrate) return;
+            if (type === 'soft') navigator.vibrate(10);
+            if (type === 'success') navigator.vibrate([50, 50, 50]);
+        }
+
+        // --- STATE & CONFIG ---
+        let config = { sets: 20, work: 45, rest: 15 };
+        let state = {
+            currentSet: 0,
+            timeLeft: 0,
+            mode: 'IDLE', // IDLE, WORK, REST
+            isRunning: false,
+            wakeLock: null
+        };
+        let timerInt = null;
+
+        const quotes = [
+            "Find your rhythm.", "Focus on form.", "Breathe.", "Stay consistent.", 
+            "Power through.", "Own this moment.", "Stronger every day.", "Keep moving."
+        ];
+
+        // --- DOM REFS ---
+        const els = {
+            bg: document.getElementById('ambient-bg'),
+            setup: document.getElementById('setup-screen'),
+            workout: document.getElementById('workout-screen'),
+            card: document.getElementById('main-card'),
+            progress: document.getElementById('card-progress'),
+            timer: document.getElementById('timer-display'),
+            label: document.getElementById('timer-label'),
+            quote: document.getElementById('quote-display'),
+            setCount: document.getElementById('set-counter'),
+            status: document.getElementById('session-label'),
+            stack: document.getElementById('wallet-stack'),
+            playIcon: document.getElementById('play-icon'),
+            summary: document.getElementById('summary-overlay')
+        };
+
+        // --- LOGIC ---
+
+        function initStack() {
+            els.stack.innerHTML = '';
+            // Visual Limit: if > 30 sets, scale them smaller or limit display?
+            // Apple design handles density gracefully. Let's just render all but small.
+            for(let i=0; i<config.sets; i++) {
+                const el = document.createElement('div');
+                el.className = 'stack-item';
+                el.id = `stack-${i}`;
+                // Dynamic width calculation to fit container
+                el.style.width = `calc(${100/config.sets}% - 2px)`;
+                el.style.maxWidth = '10px'; 
+                el.style.minWidth = '2px';
+                els.stack.appendChild(el);
+            }
+        }
+
+        async function requestWakeLock() {
+            try { state.wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+        }
+
+        function loadStreak() {
+            const s = localStorage.getItem('flow_streak') || 0;
+            document.getElementById('streak-display').innerText = `${s} Day Streak`;
+        }
+
+        function startSession() {
+            config.sets = parseInt(document.getElementById('input-sets').value) || 20;
+            config.work = parseInt(document.getElementById('input-seconds').value) || 45;
+            config.rest = parseInt(document.getElementById('input-rest').value) || 15;
+            
+            els.setup.classList.add('hidden');
+            els.workout.classList.remove('hidden');
+            
+            // Intro Animation
+            setTimeout(() => {
+                els.card.classList.remove('opacity-0', 'translate-y-10');
+            }, 100);
+
+            initStack();
+            loadStreak();
+            requestWakeLock();
+            
+            // Auto-start logic
+            runWork(); 
+        }
+
+        function toggleTimer() {
+            if (state.isRunning) {
+                clearInterval(timerInt);
+                state.isRunning = false;
+                // Play Icon
+                els.playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; 
+                els.card.style.transform = 'scale(0.98)';
+                els.card.style.opacity = '0.9';
+            } else {
+                state.isRunning = true;
+                timerInt = setInterval(tick, 1000);
+                // Pause Icon
+                els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'; 
+                els.card.style.transform = 'scale(1)';
+                els.card.style.opacity = '1';
+            }
+        }
+
+        function runWork() {
+            state.mode = 'WORK';
+            state.timeLeft = config.work;
+            state.isRunning = true;
+            
+            // UI Update: Solar Flare Mode
+            els.bg.classList.remove('recovery-mode');
+            els.progress.classList.remove('recovery');
+            els.label.innerText = "Focus";
+            els.label.style.color = "#FF9F0A"; // Solar Flare End
+            
+            els.quote.innerText = quotes[state.currentSet % quotes.length];
+            els.setCount.innerText = `Completed ${state.currentSet}`;
+            els.status.innerText = "Focus";
+            
+            // Stack Visual
+            const stackItem = document.getElementById(`stack-${state.currentSet}`);
+            if(stackItem) stackItem.classList.add('active');
+
+            // Controls
+            els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            
+            playSound('switch');
+            if (timerInt) clearInterval(timerInt);
+            timerInt = setInterval(tick, 1000);
+            updateTimerUI();
+        }
+
+        function runRest() {
+            state.mode = 'REST';
+            state.timeLeft = config.rest;
+            state.isRunning = true;
+
+            // UI Update: Deep Breath Mode
+            els.bg.classList.add('recovery-mode');
+            els.progress.classList.add('recovery');
+            els.label.innerText = "Recovery";
+            els.label.style.color = "#63E6E2"; // Deep Breath End
+            
+            els.quote.innerText = "Breathe deeply.";
+            els.status.innerText = "Recovery";
+
+            playSound('switch');
+            if (timerInt) clearInterval(timerInt);
+            timerInt = setInterval(tick, 1000);
+            updateTimerUI();
+        }
+
+        function tick() {
+            state.timeLeft--;
+            updateTimerUI();
+
+            if (state.timeLeft <= 3 && state.timeLeft > 0) playSound('tick');
+
+            if (state.timeLeft <= 0) {
+                clearInterval(timerInt);
+                haptic('success');
+                
+                if (state.mode === 'WORK') {
+                    // Mark visual stack as done
+                    const stackItem = document.getElementById(`stack-${state.currentSet}`);
+                    if(stackItem) {
+                         stackItem.classList.remove('active');
+                         stackItem.classList.add('done');
+                    }
+
+                    // Check progress
+                    if (state.currentSet < config.sets - 1) {
+                        state.currentSet++; // Increment completed count for next display
+                        if (config.rest > 0) {
+                            runRest();
+                        } else {
+                            runWork();
+                        }
+                    } else {
+                        // Last set done
+                        state.currentSet++; // To show full count
+                        finishSession();
+                    }
+                } else {
+                    // Rest finished -> Go to next Work
+                    runWork();
+                }
+            }
+        }
+
+        function updateTimerUI() {
+            els.timer.innerText = state.timeLeft;
+            const total = state.mode === 'WORK' ? config.work : config.rest;
+            const pct = ((total - state.timeLeft) / total) * 100;
+            els.progress.style.height = pct + '%';
+        }
+
+        function finishSession() {
+            playSound('success');
+            
+            // Update Streak
+            let s = parseInt(localStorage.getItem('flow_streak') || 0);
+            s++;
+            localStorage.setItem('flow_streak', s);
+
+            // Silver/Gold Confetti
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#ffffff', '#FFD700', '#C0C0C0'],
+                disableForReducedMotion: true
+            });
+
+            // Calc Stats
+            const totalSec = (config.sets * config.work) + ((config.sets-1)*config.rest);
+            const min = Math.floor(totalSec/60);
+            const sec = totalSec%60;
+            document.getElementById('sum-time').innerText = `${min}:${sec.toString().padStart(2,'0')}`;
+            document.getElementById('sum-cal').innerText = Math.floor(totalSec/60 * 9); // ~9kcal/min
+
+            setTimeout(() => {
+                els.summary.classList.remove('hidden');
+            }, 1000);
+        }
+
+        function returnToSetup() {
+            clearInterval(timerInt);
+            location.reload();
+        }
+
+        loadStreak();
+
+    </script>
+</body>
+</html>
