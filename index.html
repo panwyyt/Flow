@@ -83,6 +83,7 @@
             /* Solar Flare Gradient */
             background: linear-gradient(to top, var(--color-solar-flare-start), var(--color-solar-flare-end));
             opacity: 0.8;
+            /* Key tweak: Ensure animation matches the delay */
             transition: height 1s linear, background 0.5s ease;
             mix-blend-mode: overlay;
         }
@@ -364,10 +365,13 @@
 
         function initStack() {
             els.stack.innerHTML = '';
+            // Visual Limit: if > 30 sets, scale them smaller or limit display?
+            // Apple design handles density gracefully. Let's just render all but small.
             for(let i=0; i<config.sets; i++) {
                 const el = document.createElement('div');
                 el.className = 'stack-item';
                 el.id = `stack-${i}`;
+                // Dynamic width calculation to fit container
                 el.style.width = `calc(${100/config.sets}% - 2px)`;
                 el.style.maxWidth = '10px'; 
                 el.style.minWidth = '2px';
@@ -385,10 +389,12 @@
         }
 
         function startSession() {
+            // --- FIX: Correctly handle 0 input for rest ---
             const setsVal = parseInt(document.getElementById('input-sets').value);
             const workVal = parseInt(document.getElementById('input-seconds').value);
             const restVal = parseInt(document.getElementById('input-rest').value);
 
+            // Use isNaN to check if input is a valid number, if so use it (even if 0)
             config.sets = isNaN(setsVal) ? 20 : setsVal;
             config.work = isNaN(workVal) ? 45 : workVal;
             config.rest = isNaN(restVal) ? 15 : restVal;
@@ -396,6 +402,7 @@
             els.setup.classList.add('hidden');
             els.workout.classList.remove('hidden');
             
+            // Intro Animation
             setTimeout(() => {
                 els.card.classList.remove('opacity-0', 'translate-y-10');
             }, 100);
@@ -404,6 +411,7 @@
             loadStreak();
             requestWakeLock();
             
+            // Auto-start logic
             runWork(); 
         }
 
@@ -411,12 +419,14 @@
             if (state.isRunning) {
                 clearInterval(timerInt);
                 state.isRunning = false;
+                // Play Icon
                 els.playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; 
                 els.card.style.transform = 'scale(0.98)';
                 els.card.style.opacity = '0.9';
             } else {
                 state.isRunning = true;
                 timerInt = setInterval(tick, 1000);
+                // Pause Icon
                 els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'; 
                 els.card.style.transform = 'scale(1)';
                 els.card.style.opacity = '1';
@@ -428,18 +438,21 @@
             state.timeLeft = config.work;
             state.isRunning = true;
             
+            // UI Update: Solar Flare Mode
             els.bg.classList.remove('recovery-mode');
             els.progress.classList.remove('recovery');
             els.label.innerText = "Focus";
-            els.label.style.color = "#FF9F0A"; 
+            els.label.style.color = "#FF9F0A"; // Solar Flare End
             
             els.quote.innerText = quotes[state.currentSet % quotes.length];
             els.setCount.innerText = `Completed ${state.currentSet}`;
             els.status.innerText = "Focus";
             
+            // Stack Visual
             const stackItem = document.getElementById(`stack-${state.currentSet}`);
             if(stackItem) stackItem.classList.add('active');
 
+            // Controls
             els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
             
             playSound('switch');
@@ -453,10 +466,11 @@
             state.timeLeft = config.rest;
             state.isRunning = true;
 
+            // UI Update: Deep Breath Mode
             els.bg.classList.add('recovery-mode');
             els.progress.classList.add('recovery');
             els.label.innerText = "Recovery";
-            els.label.style.color = "#63E6E2"; 
+            els.label.style.color = "#63E6E2"; // Deep Breath End
             
             els.quote.innerText = "Breathe deeply.";
             els.status.innerText = "Recovery";
@@ -474,38 +488,44 @@
             if (state.timeLeft <= 3 && state.timeLeft > 0) playSound('tick');
 
             if (state.timeLeft <= 0) {
-                // --- FIX: เพิ่มการรอ (setTimeout) เพื่อให้ Animation เต็มหลอดก่อนเปลี่ยน ---
+                // STOP TIMER & WAIT FOR ANIMATION
                 clearInterval(timerInt);
                 haptic('success');
                 
-                // รอ 1 วินาที (1000ms) ให้กราฟิกวิ่งเต็ม แล้วค่อยเปลี่ยน Set
+                // *** THE FIX: Delay 1s before switching ***
                 setTimeout(() => {
                     handleSetSwitch();
                 }, 1000);
             }
         }
-        
-        // แยก Logic การเปลี่ยน Set ออกมาเพื่อเรียกใช้หลังจาก Delay
+
+        // Logic split into separate function to be called after delay
         function handleSetSwitch() {
             if (state.mode === 'WORK') {
+                // Mark visual stack as done
                 const stackItem = document.getElementById(`stack-${state.currentSet}`);
                 if(stackItem) {
                      stackItem.classList.remove('active');
                      stackItem.classList.add('done');
                 }
 
+                // Check progress
                 if (state.currentSet < config.sets - 1) {
-                    state.currentSet++; 
+                    state.currentSet++; // Increment completed count for next display
+                    
+                    // Check if we need to rest or skip directly to work
                     if (config.rest > 0) {
                         runRest();
                     } else {
                         runWork();
                     }
                 } else {
-                    state.currentSet++; 
+                    // Last set done
+                    state.currentSet++; // To show full count
                     finishSession();
                 }
             } else {
+                // Rest finished -> Go to next Work
                 runWork();
             }
         }
@@ -513,7 +533,6 @@
         function updateTimerUI() {
             els.timer.innerText = state.timeLeft;
             const total = state.mode === 'WORK' ? config.work : config.rest;
-            // คำนวณ % ตามปกติ (เมื่อ timeLeft=0 จะได้ 100%)
             const pct = ((total - state.timeLeft) / total) * 100;
             els.progress.style.height = pct + '%';
         }
@@ -521,10 +540,12 @@
         function finishSession() {
             playSound('success');
             
+            // Update Streak
             let s = parseInt(localStorage.getItem('flow_streak') || 0);
             s++;
             localStorage.setItem('flow_streak', s);
 
+            // Silver/Gold Confetti
             confetti({
                 particleCount: 120,
                 spread: 80,
@@ -533,11 +554,12 @@
                 disableForReducedMotion: true
             });
 
+            // Calc Stats
             const totalSec = (config.sets * config.work) + ((config.sets-1)*config.rest);
             const min = Math.floor(totalSec/60);
             const sec = totalSec%60;
             document.getElementById('sum-time').innerText = `${min}:${sec.toString().padStart(2,'0')}`;
-            document.getElementById('sum-cal').innerText = Math.floor(totalSec/60 * 9); 
+            document.getElementById('sum-cal').innerText = Math.floor(totalSec/60 * 9); // ~9kcal/min
 
             setTimeout(() => {
                 els.summary.classList.remove('hidden');
@@ -550,6 +572,7 @@
         }
 
         loadStreak();
+
     </script>
 </body>
 </html>
