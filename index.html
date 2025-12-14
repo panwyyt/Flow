@@ -1,275 +1,234 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flow : Find your rhythm.</title>
+    <title>Flow : Rhythm</title>
     <link rel="icon" href="https://avatars.githubusercontent.com/u/86871974?v=4" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        /* Apple System Font Setup */
+        /* --- DESIGN SYSTEM: VARIABLES --- */
         :root {
-            --app-bg: #000000;
-            --card-glass: rgba(255, 255, 255, 0.12);
-            --card-border: rgba(255, 255, 255, 0.2);
+            /* Default: Dark Mode (Titanium) */
+            --bg-app: #000000;
+            --bg-card: #1C1C1E;
             --text-primary: #FFFFFF;
-            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-secondary: rgba(255, 255, 255, 0.5);
+            --border-glass: rgba(255, 255, 255, 0.15);
+            --input-border: rgba(255, 255, 255, 0.2);
+            --btn-glass: rgba(255, 255, 255, 0.1);
+            --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             
-            /* Flow Brand Colors */
-            --color-solar-flare-start: #FF453A;
-            --color-solar-flare-end: #FF9F0A;
-            --color-deep-breath-start: #30D158;
-            --color-deep-breath-end: #63E6E2;
+            /* Brand Colors */
+            --color-focus-start: #FF453A;
+            --color-focus-end: #FF9F0A;
+            --color-rest-start: #30D158;
+            --color-rest-end: #63E6E2;
+        }
+
+        /* Light Mode (Porcelain) */
+        [data-theme="light"] {
+            --bg-app: #F2F2F7; /* Apple System Gray 6 */
+            --bg-card: #FFFFFF;
+            --text-primary: #1C1C1E;
+            --text-secondary: rgba(60, 60, 67, 0.6);
+            --border-glass: rgba(0, 0, 0, 0.05);
+            --input-border: rgba(60, 60, 67, 0.15);
+            --btn-glass: rgba(0, 0, 0, 0.05);
+            --shadow-card: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--app-bg);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-app);
             color: var(--text-primary);
             overflow: hidden;
-            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.5s cubic-bezier(0.32, 0.72, 0, 1);
         }
 
-        /* Ambient Background: Midnight */
-        .ambient-bg {
-            position: absolute;
-            width: 150vw;
-            height: 150vw;
-            background: radial-gradient(circle, rgba(255, 69, 58, 0.15) 0%, rgba(0,0,0,0) 60%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            filter: blur(80px);
-            transition: background 1.5s ease;
-            z-index: 0;
-        }
-
-        .ambient-bg.recovery-mode {
-            background: radial-gradient(circle, rgba(48, 209, 88, 0.15) 0%, rgba(0,0,0,0) 60%);
-        }
-
-        /* Glass Buttons */
+        /* --- UTILITIES --- */
+        .theme-text-primary { color: var(--text-primary); }
+        .theme-text-secondary { color: var(--text-secondary); }
+        .theme-bg-card { background-color: var(--bg-card); }
+        
+        /* Glass Button */
         .glass-btn {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 0.5px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+            background: var(--btn-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            transition: all 0.2s ease;
+            color: var(--text-primary);
         }
-        .glass-btn:active {
-            transform: scale(0.96);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Active Card Style (Titanium Feel) */
-        .main-card {
-            background: #1C1C1E;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
-            position: relative;
-            transform-style: preserve-3d;
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* Liquid Motion */
-        .liquid-progress {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 0%;
-            /* Solar Flare Gradient */
-            background: linear-gradient(to top, var(--color-solar-flare-start), var(--color-solar-flare-end));
-            opacity: 0.8;
-            /* Key tweak: Ensure animation matches the delay */
-            transition: height 1s linear, background 0.5s ease;
-            mix-blend-mode: overlay;
-        }
-        
-        .liquid-progress.recovery {
-            /* Deep Breath Gradient */
-            background: linear-gradient(to top, var(--color-deep-breath-start), var(--color-deep-breath-end));
-        }
-
-        /* Typography */
-        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
-
-        /* Wallet Stack */
-        .wallet-stack-container {
-            height: 60px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            overflow: visible;
-        }
-        
-        .stack-item {
-            width: 40px;
-            height: 60px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.2);
-            margin: 0 2px;
-            transition: all 0.4s ease;
-            transform-origin: bottom;
-        }
-        .stack-item.active {
-            height: 70px;
-            background: white;
-            box-shadow: 0 0 15px rgba(255,255,255,0.3);
-            margin-bottom: 10px;
-        }
-        .stack-item.done {
-            background: var(--color-solar-flare-end);
-            opacity: 0.5;
-            height: 40px;
-        }
+        .glass-btn:active { transform: scale(0.95); background: var(--input-border); }
 
         /* Inputs */
         .apple-input {
             background: transparent;
             border: none;
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 600;
-            text-align: center;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--input-border);
+            transition: border-color 0.3s;
+        }
+        .apple-input:focus { outline: none; border-bottom-color: var(--text-primary); }
+
+        /* --- CARD ANIMATIONS (The "New Bottle" Effect) --- */
+        .card-stage {
+            position: relative;
             width: 100%;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-            padding: 10px;
-            font-family: -apple-system, sans-serif;
-        }
-        .apple-input:focus {
-            outline: none;
-            border-bottom-color: white;
+            max-width: 24rem; /* max-w-sm */
+            aspect-ratio: 3/4;
+            perspective: 1000px;
         }
 
-        /* Animations */
-        .slide-up-enter { animation: slideUpEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideUpEnter {
-            from { transform: translateY(100vh); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .settings-card {
-            background: #1C1C1E;
+        .flow-card {
+            position: absolute;
+            inset: 0;
             border-radius: 28px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            width: 90%;
-            max-width: 400px;
+            overflow: hidden;
+            background: var(--bg-card);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-glass);
+            display: flex;
+            flex-col: column;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+            will-change: transform, opacity;
+        }
+
+        /* Liquid Inside */
+        .liquid-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Start full, drain down */
+            transition: height 1s linear;
+            opacity: 0.15; /* Subtle tint */
+        }
+        [data-theme="light"] .liquid-fill { opacity: 0.1; }
+
+        /* Animation Classes */
+        .slide-in {
+            animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .slide-out {
+            animation: cardExit 0.5s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+        }
+
+        @keyframes cardEnter {
+            from { transform: translateX(110%) scale(0.95) rotate(5deg); opacity: 0; }
+            to { transform: translateX(0) scale(1) rotate(0); opacity: 1; }
+        }
+        @keyframes cardExit {
+            from { transform: translateX(0) scale(1); opacity: 1; }
+            to { transform: translateX(-110%) scale(0.9) rotate(-5deg); opacity: 0; }
+        }
+
+        /* Wallet Stack */
+        .stack-item {
+            width: 6px;
+            height: 40px;
+            border-radius: 4px;
+            background: var(--input-border);
+            margin: 0 2px;
+            transition: all 0.4s ease;
+        }
+        .stack-item.active {
+            height: 60px;
+            background: var(--text-primary);
+            box-shadow: 0 0 15px var(--border-glass);
+        }
+        .stack-item.done {
+            background: var(--color-focus-end);
+            opacity: 0.5;
+            height: 30px;
         }
     </style>
 </head>
-<body>
+<body data-theme="dark">
 
-    <div id="ambient-bg" class="ambient-bg"></div>
+    <div id="setup-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/50 backdrop-blur-xl transition-all duration-500">
+        
+        <button onclick="toggleTheme()" class="absolute top-8 right-8 w-12 h-12 rounded-full glass-btn flex items-center justify-center text-xl">
+            <span id="theme-icon">☀️</span>
+        </button>
 
-    <div id="setup-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl">
-        <div class="settings-card p-8 text-center slide-up-enter">
-            <div class="mb-8">
-                <h1 class="text-4xl text-white mb-2 tracking-tight">Flow</h1>
-                <p class="text-white/50 text-base font-medium">Find your rhythm.</p>
+        <div class="w-full max-w-sm theme-bg-card p-8 rounded-[32px] shadow-2xl border border-[var(--border-glass)]">
+            <div class="mb-8 text-center">
+                <h1 class="text-4xl font-bold theme-text-primary mb-2 tracking-tight">Flow</h1>
+                <p class="theme-text-secondary font-medium">Find your rhythm.</p>
             </div>
             
             <div class="space-y-8 mb-10">
                 <div>
-                    <div class="flex justify-between text-xs font-semibold text-white/40 uppercase mb-1 px-2">
+                    <div class="flex justify-between text-xs font-bold theme-text-secondary uppercase mb-2 tracking-widest">
                         <span>Sets</span>
-                        <span>Design Session</span>
                     </div>
-                    <input type="number" id="input-sets" value="20" class="apple-input">
+                    <input type="number" id="input-sets" class="apple-input text-4xl w-full text-center py-2 font-semibold">
                 </div>
 
                 <div class="flex gap-6">
                     <div class="flex-1">
-                        <div class="flex justify-between text-xs font-semibold text-orange-400/80 uppercase mb-1 px-2">
+                        <div class="flex justify-between text-xs font-bold text-orange-500/80 uppercase mb-2 tracking-widest">
                             <span>Focus</span>
                         </div>
-                        <input type="number" id="input-seconds" value="45" class="apple-input text-orange-400">
+                        <input type="number" id="input-work" class="apple-input text-4xl w-full text-center py-2 font-semibold text-orange-500">
                     </div>
                     <div class="flex-1">
-                        <div class="flex justify-between text-xs font-semibold text-teal-400/80 uppercase mb-1 px-2">
-                            <span>Recovery</span>
+                        <div class="flex justify-between text-xs font-bold text-teal-400/80 uppercase mb-2 tracking-widest">
+                            <span>Rest</span>
                         </div>
-                        <input type="number" id="input-rest" value="15" class="apple-input text-teal-400">
+                        <input type="number" id="input-rest" class="apple-input text-4xl w-full text-center py-2 font-semibold text-teal-400">
                     </div>
                 </div>
             </div>
 
-            <div class="mb-8 flex justify-center">
-                <div class="bg-[#2C2C2E] px-4 py-2 rounded-full flex items-center gap-2 border border-white/5">
-                    <span class="text-orange-500 text-lg">🔥</span>
-                    <span id="streak-display" class="text-sm font-semibold text-white/90">0 Day Streak</span>
-                </div>
-            </div>
-
-            <button onclick="startSession()" class="w-full bg-white text-black font-semibold text-lg py-4 rounded-2xl hover:bg-gray-100 transition active:scale-95 shadow-lg shadow-white/10">
+            <button onclick="startSession()" class="w-full bg-[var(--text-primary)] text-[var(--bg-card)] font-bold text-lg py-4 rounded-2xl hover:opacity-90 transition active:scale-95 shadow-lg">
                 Start Flow
             </button>
         </div>
     </div>
 
-    <div id="workout-screen" class="hidden h-screen w-screen flex flex-col justify-between pt-safe pb-safe relative z-10">
+    <div id="workout-screen" class="hidden h-screen w-screen flex flex-col justify-between pt-safe pb-safe relative overflow-hidden">
         
-        <div class="px-6 pt-12 flex justify-between items-center">
+        <div class="px-8 pt-12 flex justify-between items-center z-20">
             <div class="flex flex-col">
-                <span id="session-label" class="text-sm font-semibold text-white/50 uppercase tracking-wide">Ready</span>
-                <span id="set-counter" class="text-xl font-bold text-white tracking-tight">Completed 0</span>
+                <span id="header-status" class="text-xs font-bold theme-text-secondary uppercase tracking-widest">Ready</span>
+                <span id="header-counter" class="text-xl font-bold theme-text-primary tracking-tight">Set 1 / 20</span>
             </div>
             <div class="flex gap-3">
-                 <button onclick="toggleTimer()" id="play-btn" class="glass-btn w-10 h-10 rounded-full flex items-center justify-center">
-                    <svg id="play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-white"><path d="M8 5v14l11-7z"/></svg>
+                 <button onclick="toggleTimer()" id="play-btn" class="glass-btn w-12 h-12 rounded-full flex items-center justify-center">
+                    <svg id="play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
-                <button onclick="returnToSetup()" class="glass-btn w-10 h-10 rounded-full flex items-center justify-center" title="Design Session">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <button onclick="returnToSetup()" class="glass-btn w-12 h-12 rounded-full flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
         </div>
 
-        <div class="flex-1 flex items-center justify-center px-8 relative perspective">
-            <div id="main-card" class="main-card w-full max-w-sm aspect-[3/4] flex flex-col items-center justify-center opacity-0 translate-y-10">
-                <div id="card-progress" class="liquid-progress"></div>
-                
-                <div class="relative z-10 flex flex-col items-center">
-                    <span id="timer-display" class="text-8xl font-medium tracking-tighter tabular-nums drop-shadow-2xl">--</span>
-                    <span id="timer-label" class="mt-4 text-sm font-bold uppercase tracking-widest opacity-70">Focus</span>
-                    
-                    <div class="mt-12 px-6 text-center">
-                        <p id="quote-display" class="text-lg font-medium leading-relaxed opacity-90">Find your rhythm.</p>
-                    </div>
+        <div class="flex-1 flex items-center justify-center px-6 relative z-10">
+            <div id="card-stage" class="card-stage">
                 </div>
-
-                <div class="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none"></div>
-            </div>
         </div>
 
-        <div class="h-24 px-6 pb-6 flex flex-col justify-end">
-            <div id="wallet-stack" class="wallet-stack-container">
+        <div class="h-24 px-6 pb-8 flex flex-col justify-end z-20">
+            <div id="wallet-stack" class="flex items-end justify-center h-16 w-full max-w-md mx-auto">
                 </div>
         </div>
     </div>
 
-    <div id="summary-overlay" class="hidden fixed inset-0 z-50 bg-black flex items-center justify-center">
-        <div class="text-center slide-up-enter p-8 w-full max-w-md">
-            <div class="w-24 h-24 rounded-full border-4 border-orange-500 flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(255,165,0,0.4)]">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <div id="summary-overlay" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center backdrop-blur-md">
+        <div class="text-center p-8 w-full max-w-md animate-fade-in-up">
+            <div class="w-20 h-20 rounded-full border-4 border-orange-500 flex items-center justify-center mx-auto mb-6">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <h2 class="text-4xl font-bold text-white mb-2">Well Done</h2>
-            <p class="text-white/60 mb-8">You found your rhythm today.</p>
-            
-            <div class="flex gap-8 justify-center mb-10">
-                <div>
-                    <div id="sum-time" class="text-2xl font-bold text-white">00:00</div>
-                    <div class="text-xs text-white/40 uppercase font-semibold">Duration</div>
-                </div>
-                <div>
-                    <div id="sum-cal" class="text-2xl font-bold text-orange-500">0</div>
-                    <div class="text-xs text-white/40 uppercase font-semibold">Kcal</div>
-                </div>
-            </div>
-
-            <button onclick="location.reload()" class="w-full bg-[#1C1C1E] text-white px-8 py-4 rounded-2xl font-semibold border border-white/10 hover:bg-white/10 transition">
-                Close Flow
+            <h2 class="text-4xl font-bold text-white mb-2">Session Complete</h2>
+            <p class="text-white/60 mb-10">You've found your rhythm.</p>
+            <button onclick="location.reload()" class="w-full bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-gray-200 transition">
+                Done
             </button>
         </div>
     </div>
@@ -277,301 +236,321 @@
     <script>
         // --- AUDIO ENGINE ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function playSound(type) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const now = audioCtx.currentTime;
             
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
             if (type === 'tick') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.setValueAtTime(1000, now);
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.05, now);
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.02, now); // Very quiet
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.05);
+            } else if (type === 'switch') {
+                // Whoosh sound
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(300, now + 0.3);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
             } else if (type === 'success') {
-                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C Major
-                freqs.forEach((f, i) => {
+                // Chord
+                [440, 554, 659].forEach((f, i) => {
                     const o = audioCtx.createOscillator();
                     const g = audioCtx.createGain();
                     o.frequency.value = f;
-                    o.type = 'sine';
                     g.gain.setValueAtTime(0, now);
-                    g.gain.linearRampToValueAtTime(0.1, now + 0.1 + (i*0.05));
-                    g.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+                    g.gain.linearRampToValueAtTime(0.05, now + 0.1);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 2);
                     o.connect(g);
                     g.connect(audioCtx.destination);
                     o.start(now);
-                    o.stop(now + 1.5);
+                    o.stop(now + 2);
                 });
-            } else if (type === 'switch') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.2);
+                return;
             }
-        }
 
-        function haptic(type) {
-            if (!navigator.vibrate) return;
-            if (type === 'soft') navigator.vibrate(10);
-            if (type === 'success') navigator.vibrate([50, 50, 50]);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.5);
         }
 
         // --- STATE & CONFIG ---
-        let config = { sets: 20, work: 45, rest: 15 };
+        let config = { sets: 4, work: 25, rest: 5 };
         let state = {
             currentSet: 0,
             timeLeft: 0,
             mode: 'IDLE', // IDLE, WORK, REST
             isRunning: false,
-            wakeLock: null
+            timerInt: null,
+            currentCardEl: null
         };
-        let timerInt = null;
 
-        const quotes = [
-            "Find your rhythm.", "Focus on form.", "Breathe.", "Stay consistent.", 
-            "Power through.", "Own this moment.", "Stronger every day.", "Keep moving."
-        ];
-
-        // --- DOM REFS ---
         const els = {
-            bg: document.getElementById('ambient-bg'),
             setup: document.getElementById('setup-screen'),
             workout: document.getElementById('workout-screen'),
-            card: document.getElementById('main-card'),
-            progress: document.getElementById('card-progress'),
-            timer: document.getElementById('timer-display'),
-            label: document.getElementById('timer-label'),
-            quote: document.getElementById('quote-display'),
-            setCount: document.getElementById('set-counter'),
-            status: document.getElementById('session-label'),
+            stage: document.getElementById('card-stage'),
             stack: document.getElementById('wallet-stack'),
+            headerStatus: document.getElementById('header-status'),
+            headerCounter: document.getElementById('header-counter'),
             playIcon: document.getElementById('play-icon'),
-            summary: document.getElementById('summary-overlay')
+            inputs: {
+                sets: document.getElementById('input-sets'),
+                work: document.getElementById('input-work'),
+                rest: document.getElementById('input-rest')
+            }
         };
+
+        // --- THEME MANAGEMENT ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('flow_theme') || 'dark';
+            document.body.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const current = document.body.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', next);
+            localStorage.setItem('flow_theme', next);
+            updateThemeIcon(next);
+        }
+
+        function updateThemeIcon(theme) {
+            document.getElementById('theme-icon').innerText = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // --- PERSISTENCE ---
+        function loadSettings() {
+            const saved = JSON.parse(localStorage.getItem('flow_config'));
+            if(saved) {
+                els.inputs.sets.value = saved.sets;
+                els.inputs.work.value = saved.work;
+                // Check specifically if rest is 0
+                els.inputs.rest.value = (saved.rest !== undefined) ? saved.rest : 15;
+            } else {
+                // Defaults
+                els.inputs.sets.value = 20;
+                els.inputs.work.value = 45;
+                els.inputs.rest.value = 15;
+            }
+        }
+
+        function saveSettings() {
+            const s = parseInt(els.inputs.sets.value);
+            const w = parseInt(els.inputs.work.value);
+            const r = parseInt(els.inputs.rest.value);
+
+            const cfg = {
+                sets: isNaN(s) ? 20 : s,
+                work: isNaN(w) ? 45 : w,
+                rest: isNaN(r) ? 15 : r // Now allows 0 correctly
+            };
+            localStorage.setItem('flow_config', JSON.stringify(cfg));
+            return cfg;
+        }
 
         // --- LOGIC ---
 
         function initStack() {
             els.stack.innerHTML = '';
-            // Visual Limit: if > 30 sets, scale them smaller or limit display?
-            // Apple design handles density gracefully. Let's just render all but small.
             for(let i=0; i<config.sets; i++) {
-                const el = document.createElement('div');
-                el.className = 'stack-item';
-                el.id = `stack-${i}`;
-                // Dynamic width calculation to fit container
-                el.style.width = `calc(${100/config.sets}% - 2px)`;
-                el.style.maxWidth = '10px'; 
-                el.style.minWidth = '2px';
-                els.stack.appendChild(el);
+                const d = document.createElement('div');
+                d.className = 'stack-item';
+                d.id = `stack-${i}`;
+                d.style.width = `calc(${100/config.sets}% - 4px)`;
+                d.style.maxWidth = '20px';
+                els.stack.appendChild(d);
             }
         }
 
-        async function requestWakeLock() {
-            try { state.wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
-        }
-
-        function loadStreak() {
-            const s = localStorage.getItem('flow_streak') || 0;
-            document.getElementById('streak-display').innerText = `${s} Day Streak`;
+        function updateStack(idx, status) {
+            const el = document.getElementById(`stack-${idx}`);
+            if(!el) return;
+            // Clear classes
+            el.className = 'stack-item';
+            
+            if(status === 'active') el.classList.add('active');
+            if(status === 'done') el.classList.add('done');
         }
 
         function startSession() {
-            // --- FIX: Correctly handle 0 input for rest ---
-            const setsVal = parseInt(document.getElementById('input-sets').value);
-            const workVal = parseInt(document.getElementById('input-seconds').value);
-            const restVal = parseInt(document.getElementById('input-rest').value);
-
-            // Use isNaN to check if input is a valid number, if so use it (even if 0)
-            config.sets = isNaN(setsVal) ? 20 : setsVal;
-            config.work = isNaN(workVal) ? 45 : workVal;
-            config.rest = isNaN(restVal) ? 15 : restVal;
+            config = saveSettings();
             
-            els.setup.classList.add('hidden');
+            els.setup.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => els.setup.classList.add('hidden'), 500);
+            
             els.workout.classList.remove('hidden');
             
-            // Intro Animation
-            setTimeout(() => {
-                els.card.classList.remove('opacity-0', 'translate-y-10');
-            }, 100);
-
             initStack();
-            loadStreak();
-            requestWakeLock();
+            state.currentSet = 0;
+            spawnCard('WORK'); // Start first card
             
-            // Auto-start logic
-            runWork(); 
+            // Wake Lock
+            if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(e=>{});
         }
 
-        function toggleTimer() {
-            if (state.isRunning) {
-                clearInterval(timerInt);
-                state.isRunning = false;
-                // Play Icon
-                els.playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; 
-                els.card.style.transform = 'scale(0.98)';
-                els.card.style.opacity = '0.9';
-            } else {
-                state.isRunning = true;
-                timerInt = setInterval(tick, 1000);
-                // Pause Icon
-                els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'; 
-                els.card.style.transform = 'scale(1)';
-                els.card.style.opacity = '1';
+        // --- CARD ENGINE (The "Bottle Change" Logic) ---
+        
+        function getModeColor(mode) {
+            if (mode === 'WORK') return 'linear-gradient(to top, var(--color-focus-start), var(--color-focus-end))';
+            return 'linear-gradient(to top, var(--color-rest-start), var(--color-rest-end))';
+        }
+
+        function getModeText(mode) {
+            return mode === 'WORK' ? 'Focus' : 'Recovery';
+        }
+
+        function createCardHTML(mode, duration) {
+            const gradient = getModeColor(mode);
+            const label = getModeText(mode);
+            const labelColor = mode === 'WORK' ? '#FF9F0A' : '#63E6E2';
+            
+            return `
+                <div class="liquid-fill" style="background: ${gradient}; height: 100%;"></div>
+                <div class="relative z-10 flex flex-col items-center">
+                    <span class="timer-display text-8xl font-medium tracking-tighter tabular-nums drop-shadow-2xl theme-text-primary">${duration}</span>
+                    <span class="mt-4 text-sm font-bold uppercase tracking-widest" style="color: ${labelColor}">${label}</span>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none mix-blend-overlay"></div>
+            `;
+        }
+
+        function spawnCard(mode) {
+            // 1. Prepare Data
+            state.mode = mode;
+            state.timeLeft = (mode === 'WORK') ? config.work : config.rest;
+            state.isRunning = true;
+
+            // 2. UI Updates
+            els.headerStatus.innerText = getModeText(mode);
+            els.headerCounter.innerText = `Set ${state.currentSet + 1} / ${config.sets}`;
+            updateStack(state.currentSet, 'active');
+            
+            // 3. Create New DOM Element
+            const newCard = document.createElement('div');
+            newCard.className = 'flow-card slide-in'; // Start Enter Animation
+            newCard.innerHTML = createCardHTML(mode, state.timeLeft);
+            
+            // 4. Handle Old Card (Exit)
+            if (state.currentCardEl) {
+                const oldCard = state.currentCardEl;
+                oldCard.classList.remove('slide-in');
+                oldCard.classList.add('slide-out');
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    if(oldCard.parentNode) oldCard.parentNode.removeChild(oldCard);
+                }, 500);
             }
-        }
 
-        function runWork() {
-            state.mode = 'WORK';
-            state.timeLeft = config.work;
-            state.isRunning = true;
-            
-            // UI Update: Solar Flare Mode
-            els.bg.classList.remove('recovery-mode');
-            els.progress.classList.remove('recovery');
-            els.label.innerText = "Focus";
-            els.label.style.color = "#FF9F0A"; // Solar Flare End
-            
-            els.quote.innerText = quotes[state.currentSet % quotes.length];
-            els.setCount.innerText = `Completed ${state.currentSet}`;
-            els.status.innerText = "Focus";
-            
-            // Stack Visual
-            const stackItem = document.getElementById(`stack-${state.currentSet}`);
-            if(stackItem) stackItem.classList.add('active');
-
-            // Controls
-            els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            // 5. Append New Card
+            els.stage.appendChild(newCard);
+            state.currentCardEl = newCard;
             
             playSound('switch');
-            if (timerInt) clearInterval(timerInt);
-            timerInt = setInterval(tick, 1000);
-            updateTimerUI();
-        }
-
-        function runRest() {
-            state.mode = 'REST';
-            state.timeLeft = config.rest;
-            state.isRunning = true;
-
-            // UI Update: Deep Breath Mode
-            els.bg.classList.add('recovery-mode');
-            els.progress.classList.add('recovery');
-            els.label.innerText = "Recovery";
-            els.label.style.color = "#63E6E2"; // Deep Breath End
             
-            els.quote.innerText = "Breathe deeply.";
-            els.status.innerText = "Recovery";
-
-            playSound('switch');
-            if (timerInt) clearInterval(timerInt);
-            timerInt = setInterval(tick, 1000);
-            updateTimerUI();
+            // 6. Start Timer
+            if(state.timerInt) clearInterval(state.timerInt);
+            state.timerInt = setInterval(tick, 1000);
+            updatePlayIcon();
         }
 
         function tick() {
+            if(!state.isRunning) return;
+
             state.timeLeft--;
-            updateTimerUI();
+            
+            // Update Card UI directly
+            const timerDisplay = state.currentCardEl.querySelector('.timer-display');
+            const liquid = state.currentCardEl.querySelector('.liquid-fill');
+            
+            if(timerDisplay) timerDisplay.innerText = state.timeLeft;
+            if(liquid) {
+                const total = state.mode === 'WORK' ? config.work : config.rest;
+                const pct = (state.timeLeft / total) * 100;
+                liquid.style.height = `${pct}%`;
+            }
 
-            if (state.timeLeft <= 3 && state.timeLeft > 0) playSound('tick');
+            if(state.timeLeft <= 3 && state.timeLeft > 0) playSound('tick');
 
-            if (state.timeLeft <= 0) {
-                // STOP TIMER & WAIT FOR ANIMATION
-                clearInterval(timerInt);
-                haptic('success');
-                
-                // *** THE FIX: Delay 1s before switching ***
-                setTimeout(() => {
-                    handleSetSwitch();
-                }, 1000);
+            if(state.timeLeft <= 0) {
+                handleFinishStep();
             }
         }
 
-        // Logic split into separate function to be called after delay
-        function handleSetSwitch() {
-            if (state.mode === 'WORK') {
-                // Mark visual stack as done
-                const stackItem = document.getElementById(`stack-${state.currentSet}`);
-                if(stackItem) {
-                     stackItem.classList.remove('active');
-                     stackItem.classList.add('done');
-                }
+        function handleFinishStep() {
+            clearInterval(state.timerInt);
+            if(navigator.vibrate) navigator.vibrate(50);
 
-                // Check progress
+            // Logic for next step
+            if (state.mode === 'WORK') {
+                updateStack(state.currentSet, 'done');
+                
                 if (state.currentSet < config.sets - 1) {
-                    state.currentSet++; // Increment completed count for next display
-                    
-                    // Check if we need to rest or skip directly to work
+                    // Check if Rest is 0
                     if (config.rest > 0) {
-                        runRest();
+                        spawnCard('REST');
                     } else {
-                        runWork();
+                        // Skip Rest, go straight to next set
+                        state.currentSet++;
+                        spawnCard('WORK');
                     }
                 } else {
-                    // Last set done
-                    state.currentSet++; // To show full count
+                    // All sets done
                     finishSession();
                 }
             } else {
-                // Rest finished -> Go to next Work
-                runWork();
+                // Rest finished, go to next work
+                state.currentSet++;
+                spawnCard('WORK');
             }
         }
 
-        function updateTimerUI() {
-            els.timer.innerText = state.timeLeft;
-            const total = state.mode === 'WORK' ? config.work : config.rest;
-            const pct = ((total - state.timeLeft) / total) * 100;
-            els.progress.style.height = pct + '%';
+        function toggleTimer() {
+            state.isRunning = !state.isRunning;
+            updatePlayIcon();
+            
+            if (state.isRunning) {
+                // Resize back
+                state.currentCardEl.style.transform = 'scale(1)';
+                state.currentCardEl.style.opacity = '1';
+            } else {
+                // Dim and shrink slightly
+                state.currentCardEl.style.transform = 'scale(0.98)';
+                state.currentCardEl.style.opacity = '0.8';
+            }
+        }
+
+        function updatePlayIcon() {
+            if (state.isRunning) {
+                els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            } else {
+                els.playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            }
         }
 
         function finishSession() {
             playSound('success');
-            
-            // Update Streak
-            let s = parseInt(localStorage.getItem('flow_streak') || 0);
-            s++;
-            localStorage.setItem('flow_streak', s);
-
-            // Silver/Gold Confetti
             confetti({
-                particleCount: 120,
-                spread: 80,
+                particleCount: 150,
+                spread: 70,
                 origin: { y: 0.6 },
-                colors: ['#ffffff', '#FFD700', '#C0C0C0'],
-                disableForReducedMotion: true
+                colors: ['#FF9F0A', '#ffffff']
             });
-
-            // Calc Stats
-            const totalSec = (config.sets * config.work) + ((config.sets-1)*config.rest);
-            const min = Math.floor(totalSec/60);
-            const sec = totalSec%60;
-            document.getElementById('sum-time').innerText = `${min}:${sec.toString().padStart(2,'0')}`;
-            document.getElementById('sum-cal').innerText = Math.floor(totalSec/60 * 9); // ~9kcal/min
-
-            setTimeout(() => {
-                els.summary.classList.remove('hidden');
-            }, 1000);
+            document.getElementById('summary-overlay').classList.remove('hidden');
         }
 
         function returnToSetup() {
-            clearInterval(timerInt);
+            clearInterval(state.timerInt);
             location.reload();
         }
 
-        loadStreak();
+        // --- INIT ---
+        initTheme();
+        loadSettings();
 
     </script>
 </body>
